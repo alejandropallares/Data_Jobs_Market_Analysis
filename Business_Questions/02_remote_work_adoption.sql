@@ -1,9 +1,4 @@
-/*
-Business Question
 
-How has the demand for remote data jobs changed over time?
-
-*/
 
 SELECT 
     MAX(job_posted_date) AS newest_date,
@@ -22,141 +17,117 @@ se enfocara solo en estos años.
 
 */
 
--- ¿Cuántas ofertas remotas existen por año (2023-2024)?
-
-SELECT 
-    job_title_short,
-    EXTRACT(year FROM job_posted_date) AS year_analized,
-    COUNT(jpf.job_posted_date) AS remote_jobs
-FROM job_postings_fact AS jpf
-WHERE
-     job_work_from_home = True 
-     AND year_analized < 2025
-GROUP BY 
-    EXTRACT(year FROM job_posted_date), job_title_short
-ORDER BY year_analized, remote_jobs DESC;
-
-
 /*
-    job_title_short         │ year_analized │ remote_jobs │
-│          varchar          │     int64     │    int64    │
-├───────────────────────────┼───────────────┼─────────────┤
-│ Data Engineer             │          2023 │       21284 │
-│ Data Scientist            │          2023 │       14554 │
-│ Data Analyst              │          2023 │       13344 │
-│ Senior Data Engineer      │          2023 │        6561 │
-│ Senior Data Scientist     │          2023 │        3811 │
-│ Software Engineer         │          2023 │        2927 │
-│ Business Analyst          │          2023 │        2784 │
-│ Senior Data Analyst       │          2023 │        2370 │
-│ Machine Learning Engineer │          2023 │        1485 │
-│ Cloud Engineer            │          2023 │         573 │
-│ Data Engineer             │          2024 │       19495 │
-│ Data Scientist            │          2024 │       12885 │
-│ Data Analyst              │          2024 │       11219 │
-│ Senior Data Engineer      │          2024 │        5597 │
-│ Software Engineer         │          2024 │        3164 │
-│ Senior Data Scientist     │          2024 │        3089 │
-│ Business Analyst          │          2024 │        2708 │
-│ Machine Learning Engineer │          2024 │        2287 │
-│ Senior Data Analyst       │          2024 │        1791 │
-│ Cloud Engineer            │          2024 │         588 │
-└───────────────────────────┴───────────────┴─────────────┘
+Business Question 1
 
-Key Findings: Los roles de datos que entraron al top 3 en ambos años(2023 y 2024) fueron:
-- Data Engineer 
-- Data Scientist
-- Data Analyst 
-
-Sin embargo se puede apreciar una dismunicion sustancial en el numero de empleos remotos.
+ ¿Cuántas ofertas remotas existen por año (2023-2024)?
 
 */
 
--- ¿Qué porcentaje representan del total?
+SELECT 
+    EXTRACT(year FROM job_posted_date) AS year_analized,
+    COUNT(jpf.job_work_from_home) AS total_remote_jobs
+FROM job_postings_fact AS jpf
+WHERE 
+    job_work_from_home = True AND job_posted_date < '2025-01-01'
+GROUP BY 
+    EXTRACT(year FROM job_posted_date);
+
+/* 
+
+Key Findings: 
+
+*/
+
+/*
+Bussines Question 2:
+    ¿Qué roles de datos ofrecen el mayor número de empleos remotos?
+
+*/
+SELECT 
+    job_title_short,
+    COUNT(jpf.*) AS total_remote_jobs 
+FROM job_postings_fact AS jpf
+WHERE 
+    job_work_from_home = True AND job_posted_date < '2025-01-01'
+GROUP BY 
+    job_title_short
+ORDER BY 
+    total_remote_jobs DESC;
+
+/*
+    Key Findings: 
+*/
+
+/*
+Business Question 3:
+    ¿Qué porcentaje de las vacantes de cada rol corresponde a trabajo remoto?
+
+*/
 
 SELECT 
     job_title_short,
-    EXTRACT(year FROM job_posted_date) AS year_analized,
     COUNT(
         CASE 
             WHEN job_work_from_home = True THEN 1
-        END  
-    ) AS remote_jobs,
-
-    COUNT(*) AS total_jobs,
-
-    ROUND((COUNT(
+        END
+    ) AS total_remote_jobs, 
+    COUNT(jpf.*) AS total_posting_jobs,
+    ROUND(COUNT(
         CASE 
             WHEN job_work_from_home = True THEN 1
-        END  
-    ) / COUNT(*) ) * 100) as percentage_of_remote_jobs 
+        END
+    ) / COUNT(jpf.*), 3) * 100 AS porcentage_of_remote_job
 FROM job_postings_fact AS jpf
 WHERE 
-    EXTRACT(year FROM job_posted_date) < 2025
+    job_posted_date < '2025-01-01'
 GROUP BY 
-    EXTRACT(year FROM job_posted_date), job_title_short
-ORDER BY year_analized, percentage_of_remote_jobs DESC;
+    job_title_short
+ORDER BY 
+    porcentage_of_remote_job DESC;
 
-
+    
 /*
-   job_title_short          │ year_analized │ remote_jobs │ total_jobs │ percentage_of_remote_jobs │
-│          varchar          │     int64     │    int64    │   int64    │          double           │
-├───────────────────────────┼───────────────┼─────────────┼────────────┼───────────────────────────┤
-│ Senior Data Engineer      │          2023 │        6561 │      44679 │                      15.0 │
-│ Machine Learning Engineer │          2023 │        1485 │      14133 │                      11.0 │
-│ Data Engineer             │          2023 │       21284 │     186627 │                      11.0 │
-│ Senior Data Scientist     │          2023 │        3811 │      37027 │                      10.0 │
-│ Senior Data Analyst       │          2023 │        2370 │      29250 │                       8.0 │
-│ Data Scientist            │          2023 │       14554 │     172564 │                       8.0 │
-│ Data Analyst              │          2023 │       13344 │     196439 │                       7.0 │
-│ Software Engineer         │          2023 │        2927 │      45088 │                       6.0 │
-│ Business Analyst          │          2023 │        2784 │      49176 │                       6.0 │
-│ Cloud Engineer            │          2023 │         573 │      12373 │                       5.0 │
-│ Senior Data Engineer      │          2024 │        5597 │      29823 │                      19.0 │
-│ Machine Learning Engineer │          2024 │        2287 │      12565 │                      18.0 │
-│ Data Engineer             │          2024 │       19495 │     129057 │                      15.0 │
-│ Senior Data Scientist     │          2024 │        3089 │      21469 │                      14.0 │
-│ Data Scientist            │          2024 │       12885 │      99099 │                      13.0 │
-│ Software Engineer         │          2024 │        3164 │      24485 │                      13.0 │
-│ Senior Data Analyst       │          2024 │        1791 │      15649 │                      11.0 │
-│ Data Analyst              │          2024 │       11219 │     116296 │                      10.0 │
-│ Business Analyst          │          2024 │        2708 │      28725 │                       9.0 │
-│ Cloud Engineer            │          2024 │         588 │       6791 │                       9.0 │
-└───────────────────────────┴───────────────┴─────────────┴────────────┴───────────────────────────┘
+    Key Findings: 
 
 */
 
--- ¿Qué roles ofrecen más trabajo remoto?
-SELECT 
+
+/*
+Business Question 4
+
+¿Cómo cambió la adopción del trabajo remoto entre 2023 y 2024 para cada rol?
+
+*/
+
+SELECT
     job_title_short,
-    COUNT(jpf.job_work_from_home) AS remote_jobs
-FROM job_postings_fact AS jpf
-WHERE 
-    jpf.job_work_from_home = True 
-    AND
-    jpf.job_posted_date < '2025-01-01'
+    EXTRACT(YEAR FROM job_posted_date) AS year_analyzed,
+
+    ROUND(
+        COUNT(
+            CASE
+                WHEN job_work_from_home = TRUE THEN 1
+            END
+        ) * 100.0
+        /
+        COUNT(*),
+        3
+    ) AS percentage_remote_jobs
+
+FROM job_postings_fact
+
+WHERE job_posted_date < '2025-01-01'
+
 GROUP BY
-    job_title_short
-ORDER BY remote_jobs DESC;
-
-
-
-
-
--- ¿Cuáles crecieron más?
-
-
-SELECT 
     job_title_short,
-    COUNT(jpf.job_posted_date) AS number_of_online_positions
-FROM job_postings_fact AS jpf
-WHERE
-    job_posted_date >= '2025-01-01' AND job_posted_date <= '2025-06-30'
-GROUP BY 
-    job_title_short
-ORDER BY COUNT(jpf.job_posted_date) DESC;
+    EXTRACT(YEAR FROM job_posted_date)
 
+ORDER BY
+    job_title_short,
+    year_analyzed;
 
+   
 -- Conclusiones
 
 
