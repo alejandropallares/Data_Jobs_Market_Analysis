@@ -47,53 +47,32 @@ que un ingeniero de Nube.
 │ Business Analyst          │       91575.0 │
 │ Data Analyst              │       90000.0 │
 └───────────────────────────┴───────────────┘
-
 */
-
-
-/*
-En relacion a mi pais, hice una consulta para ver como estan los salarios de datos en México, tambien a partir de la mediana y agregue una
-columna mas para ver el conteo de los empleos con un salario anual registrado 
-
-*/
-
-SELECT 
+-- Business Question 2: How does remote work affect average salaries across data roles?
+SELECT
     job_title_short,
-    MEDIAN(salary_year_avg) AS median_salary_in_mexico,
-    COUNT(jps.*) as job_counts
-FROM 
-    job_postings_fact AS jps
-WHERE 
-    job_country = 'Mexico'
-GROUP BY
-    job_title_short
-ORDER BY MEDIAN(salary_year_avg) DESC;
+    remote_salary,
+    onsite_salary,
+    remote_salary - onsite_salary AS salary_difference
+FROM (
+    SELECT 
+        job_title_short,
+        ROUND(AVG( 
+            CASE 
+                WHEN job_work_from_home = True 
+                THEN salary_year_avg
+            END 
+        )) AS remote_salary,
 
-/*
+        ROUND(AVG(
+            CASE 
+                WHEN job_work_from_home = False
+                THEN salary_year_avg
+            END
+        )) AS onsite_salary
 
-Resultado de la consulta: 
+    FROM job_postings_fact
 
-      job_title_short       │ median_salary_in_mexico │ job_counts │
-│          varchar          │         double          │   int64    │
-├───────────────────────────┼─────────────────────────┼────────────┤
-│ Cloud Engineer            │                203500.0 │       1091 │
-│ Senior Data Scientist     │                157500.0 │       1167 │
-│ Software Engineer         │                155750.0 │       3179 │
-│ Data Engineer             │                147500.0 │       8969 │
-│ Senior Data Engineer      │                147500.0 │       1679 │
-│ Senior Data Analyst       │               133135.75 │        711 │
-│ Data Scientist            │                119725.0 │       5349 │
-│ Machine Learning Engineer │                104414.5 │        858 │
-│ Data Analyst              │                 98500.0 │       5868 │
-│ Business Analyst          │                 80850.0 │       2654 │
-
-A diferencia de los salarios generales de empleos de datos en México el rol mejor pagado es el Ingeniero de Nube
-seguido de Cientifico de Datos Senior y al igual que en la consulta general los ingenieros de Software estan dentro del
-top 3.
-
-De igual forma los roles que tienen un menor salario son los relacionados a Analisis de Datos y de negocio. 
-
-*/
-
-
-
+    GROUP BY job_title_short
+) 
+ORDER BY salary_difference;
